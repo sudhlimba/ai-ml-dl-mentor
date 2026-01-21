@@ -1,10 +1,9 @@
 import streamlit as st
-import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
 
 from core.data_loader import load_csv, get_basic_info
-from core.data_profiler import profile_dataset
+from core.data_profiler import profile_dataset, detect_time_series
 from core.visualizer import plot_correlation_heatmap, plot_boxplots
 from core.cleaning_guide import get_cleaning_guidance
 from core.model_planner import plan_models
@@ -24,7 +23,6 @@ from ui.style import apply_global_style
 st.session_state.setdefault("df", None)
 st.session_state.setdefault("problem_info", None)
 st.session_state.setdefault("fullscreen_fig", None)
-st.session_state.setdefault("fullscreen_title", None)
 
 # ===============================
 # HELPERS
@@ -32,7 +30,6 @@ st.session_state.setdefault("fullscreen_title", None)
 def rotate_axis_labels(fig):
     for ax in fig.axes:
         ax.tick_params(axis="x", rotation=90)
-        ax.tick_params(axis="y", rotation=0)
     fig.tight_layout()
 
 
@@ -62,7 +59,7 @@ apply_global_style()
 # ===============================
 # HEADER
 # ===============================
-st.markdown("<h1>AI-Guided Machine Learning & Deep Learning Project Mentor</h1>", unsafe_allow_html=True)
+st.markdown("<h1>AI-Guided Machine Learning Project Mentor</h1>", unsafe_allow_html=True)
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
 # ===============================
@@ -101,7 +98,16 @@ if st.session_state.df is not None:
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
 # ===============================
-# DATA VISUALIZATION
+# TIME SERIES DETECTION
+# ===============================
+time_info = (
+    detect_time_series(st.session_state.df)
+    if st.session_state.df is not None
+    else {"is_time_series": False}
+)
+
+# ===============================
+# AUTOMATIC VISUALIZATION (CARD OK)
 # ===============================
 if st.session_state.df is not None:
     st.markdown("## Data Visualization")
@@ -112,9 +118,9 @@ if st.session_state.df is not None:
     if heatmap:
         visuals.append((
             "Correlation Heatmap",
-            "sns.heatmap(df.corr(), annot=True)",
-            "Axes are features; colors show correlation strength.",
-            "Strong correlations indicate important predictors.",
+            "sns.heatmap(df.corr())",
+            "Shows relationships between numeric features.",
+            "Strong correlations suggest important predictors.",
             heatmap
         ))
 
@@ -123,7 +129,7 @@ if st.session_state.df is not None:
             "Boxplot",
             "sns.boxplot(x=df[column])",
             "Shows distribution and outliers.",
-            "Detects invalid values like BP = 0.",
+            "Helps detect invalid or extreme values.",
             fig
         ))
 
@@ -154,7 +160,7 @@ if st.session_state.df is not None:
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
 # ===============================
-# BUILD YOUR OWN GRAPH
+# CUSTOM GRAPH (CARD OK)
 # ===============================
 if st.session_state.df is not None:
     st.markdown("## Build Your Own Graph")
@@ -165,11 +171,10 @@ if st.session_state.df is not None:
     )
 
     cols = list(st.session_state.df.columns)
-    features = []
 
     if plot_type in ["Histogram", "Boxplot", "Count Plot"]:
         features = [st.selectbox("Feature", cols)]
-    elif plot_type in ["Scatter Plot", "Line Plot"]:
+    else:
         features = [st.selectbox("X-axis", cols), st.selectbox("Y-axis", cols)]
 
     fig = generate_custom_plot(st.session_state.df, plot_type, features)
@@ -180,10 +185,7 @@ if st.session_state.df is not None:
     with left:
         st.markdown(f"### {plot_type}")
         st.code(f"generate_custom_plot(df, '{plot_type}', {features})")
-        st.markdown("**How to read**")
-        st.write("Interpret axes based on selected features.")
-        st.markdown("**What we learn**")
-        st.write("Custom graphs help validate assumptions.")
+        st.write("Custom plots help explore specific hypotheses.")
 
         if st.button("🔍 View Fullscreen", key="fs_custom"):
             st.session_state.fullscreen_fig = fig
@@ -196,17 +198,22 @@ if st.session_state.df is not None:
 
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
+
 # ===============================
-# REMAINING SECTIONS (UNCHANGED)
+# DATASET HEALTH REPORT (RESTORED)
 # ===============================
 if st.session_state.df is not None:
     st.markdown("## Dataset Health Report")
     st.dataframe(profile_dataset(st.session_state.df))
 
-st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
+
+# ===============================
+# DATA CLEANING (NO CARDS)
+# ===============================
 if st.session_state.df is not None:
     st.markdown("## Data Cleaning")
+
     auto = st.checkbox("Apply automatic cleaning")
 
     if auto:
@@ -220,17 +227,31 @@ if st.session_state.df is not None:
 
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
+# ===============================
+# TRAIN–TEST SPLIT (NO CARDS)
+# ===============================
 if st.session_state.problem_info is not None:
     st.markdown("## Train-Test Split Strategy")
-    for s in get_train_test_guidance(st.session_state.problem_info["task_type"]):
+
+    is_ts = st.session_state.problem_info["task_type"] == "time_series"
+
+
+    for s in get_train_test_guidance(
+    st.session_state.problem_info["task_type"],
+    is_ts
+    ):
         st.markdown(f"### {s['title']}")
         st.write(s["why"])
         st.code(s["code"])
 
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
+# ===============================
+# MODEL SELECTION (NO CARDS)
+# ===============================
 if st.session_state.problem_info is not None:
     st.markdown("## Model Selection")
+
     for p in plan_models(st.session_state.problem_info):
         st.markdown(f"### {p['title']}")
         st.write(p["reason"])

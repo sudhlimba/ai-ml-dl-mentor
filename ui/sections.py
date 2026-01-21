@@ -14,24 +14,42 @@ def show_dataset_preview(df):
 
 def show_problem_understanding(problem_info):
     st.subheader("Problem Understanding")
+
     st.markdown(f"**ML Type:** {problem_info['ml_type'].upper()}")
     st.markdown(f"**Task Type:** {problem_info['task_type'].capitalize()}")
     st.markdown(f"**Target Type:** {problem_info['target_type']}")
+
+    # AI visibility (non-intrusive)
+    if problem_info.get("source") == "llm":
+        st.caption("🤖 AI-assisted reasoning")
+
     st.markdown("**Reasoning:**")
     st.write(problem_info["reasoning"])
 
 
 def show_cleaning_steps(steps):
     st.subheader("Data Cleaning Guidance")
+
     for step in steps:
         st.markdown(f"### {step['title']}")
+
+        # AI visibility
+        if step.get("source") == "llm":
+            st.caption("🤖 AI-assisted suggestion")
+
         st.markdown(step["reason"])
         st.code(step["code"], language="python")
 
 
 def show_model_plans(plans):
     st.subheader("Model Planning")
+
     for plan in plans:
         st.markdown(f"### {plan['title']}")
+
+        # AI visibility
+        if plan.get("source") == "llm":
+            st.caption("🤖 AI-assisted explanation")
+
         st.markdown(plan["reason"])
         st.code(plan["model"])

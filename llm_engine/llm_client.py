@@ -4,12 +4,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# -------------------------------
+# LLM SAFETY & COST CONTROLS
+# -------------------------------
+MODEL_NAME = "gpt-3.5-turbo"
+MAX_TOKENS = 300          # hard cap to control cost
+TEMPERATURE = 0.2
+REQUEST_TIMEOUT = 10     # seconds
 
-def call_llm(prompt, fallback_context=None):
+
+def call_llm(prompt, fallback_context=None, cache_key=None, session_state=None):
     """
-    Tries OpenAI first.
-    If quota / API fails → returns rule-based safe response.
+    Tries OpenAI first (if API key exists).
+    Enforces token limits & safe defaults.
+    If API fails → returns rule-based safe response.
     """
+
+    # -------------------------------
+    # OPTIONAL CACHE (PER SESSION)
+    # -------------------------------
+    if cache_key and session_state is not None:
+        if cache_key in session_state:
+            return session_state[cache_key]
 
     api_key = os.getenv("OPENAI_API_KEY")
 
@@ -18,18 +34,26 @@ def call_llm(prompt, fallback_context=None):
             openai.api_key = api_key
 
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model=MODEL_NAME,
                 messages=[
-                    {"role": "system", "content": "You are a careful ML mentor."},
+                    {"role": "system", "content": "You are a careful ML mentor. Be concise and practical."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.2
+                temperature=TEMPERATURE,
+                max_tokens=MAX_TOKENS,
+                request_timeout=REQUEST_TIMEOUT
             )
 
-            return response["choices"][0]["message"]["content"]
+            content = response["choices"][0]["message"]["content"]
+
+            # store in cache if provided
+            if cache_key and session_state is not None:
+                session_state[cache_key] = content
+
+            return content
 
         except Exception:
-            pass  # silently fall back
+            pass  # silently fall back (never crash app)
 
     # ===============================
     # FALLBACK (NO API REQUIRED)
@@ -42,7 +66,7 @@ def call_llm(prompt, fallback_context=None):
   "ml_type": "ml",
   "task_type": "classification",
   "target_type": "categorical",
-  "reasoning": "The goal describes a binary outcome prediction problem. Traditional ML classification models are sufficient and interpretable for medical risk prediction."
+  "reasoning": "The goal describes a classification problem with categorical outcomes. Interpretable ML models are appropriate."
 }
 """
 
@@ -52,7 +76,7 @@ def call_llm(prompt, fallback_context=None):
   "ml_type": "ml",
   "task_type": "regression",
   "target_type": "numerical",
-  "reasoning": "The goal involves predicting a continuous numeric value, which is best handled using regression models."
+  "reasoning": "The goal involves predicting a continuous numeric value, which aligns with regression modeling."
 }
 """
 

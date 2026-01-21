@@ -1,6 +1,8 @@
-def get_cleaning_guidance(df):
+def get_cleaning_guidance(df, llm_suggestions=None):
     """
     Returns step-by-step data cleaning guidance.
+    Rule-based by default.
+    Optionally enriched with LLM suggestions (advisory only).
     Safe against None inputs.
     """
 
@@ -9,11 +11,20 @@ def get_cleaning_guidance(df):
 
     steps = []
 
+    def enrich(step):
+        """
+        Attach LLM suggestion if available.
+        """
+        if llm_suggestions:
+            step["reason"] += f"\n\nLLM Suggestion:\n{llm_suggestions}"
+            step["source"] = "llm"
+        return step
+
     # ===============================
     # Missing Values
     # ===============================
     if df.isnull().sum().sum() > 0:
-        steps.append({
+        steps.append(enrich({
             "title": "Handling Missing Values",
             "reason": (
                 "Missing values can confuse models, reduce accuracy, "
@@ -32,12 +43,12 @@ df[categorical_cols] = df[categorical_cols].fillna(
     df[categorical_cols].mode().iloc[0]
 )
 """
-        })
+        }))
 
     # ===============================
     # Outliers
     # ===============================
-    steps.append({
+    steps.append(enrich({
         "title": "Handling Outliers",
         "reason": (
             "Outliers can heavily influence model learning and distort patterns, "
@@ -52,12 +63,12 @@ IQR = Q3 - Q1
 
 df = df[~((df < (Q1 - 1.5 * IQR)) | (df > (Q3 + 1.5 * IQR))).any(axis=1)]
 """
-    })
+    }))
 
     # ===============================
     # Encoding
     # ===============================
-    steps.append({
+    steps.append(enrich({
         "title": "Encoding Categorical Features",
         "reason": (
             "Machine learning models only understand numbers. "
@@ -68,12 +79,12 @@ import pandas as pd
 
 df = pd.get_dummies(df, drop_first=True)
 """
-    })
+    }))
 
     # ===============================
     # Scaling
     # ===============================
-    steps.append({
+    steps.append(enrich({
         "title": "Feature Scaling",
         "reason": (
             "Scaling ensures all numeric features contribute equally, "
@@ -86,6 +97,6 @@ scaler = StandardScaler()
 numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
 df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 """
-    })
+    }))
 
     return steps
