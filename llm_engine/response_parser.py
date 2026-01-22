@@ -3,7 +3,7 @@ import json
 
 def parse_llm_response(raw_text):
     """
-    Safely parse JSON response from LLM.
+    Safely parse JSON response from LLM (problem understanding).
     """
     try:
         data = json.loads(raw_text)
@@ -20,3 +20,39 @@ def parse_llm_response(raw_text):
             "target_type": "unknown",
             "reasoning": "Failed to parse LLM response. Using safe defaults."
         }
+
+
+# ===============================
+# NEW — Cleaning response parser
+# ===============================
+def parse_cleaning_response(raw_text):
+    """
+    Parse LLM cleaning suggestions.
+    Expected STRICT JSON.
+    Fallback-safe.
+    """
+    try:
+        data = json.loads(raw_text)
+
+        if not isinstance(data, dict):
+            return None
+
+        columns = data.get("columns", {})
+        if not isinstance(columns, dict):
+            return None
+
+        steps = []
+        for col, suggestions in columns.items():
+            if suggestions == "none" or not suggestions:
+                continue
+
+            steps.append({
+                "title": f"Cleaning suggestions for '{col}'",
+                "reason": "LLM-assisted dataset-aware recommendation.",
+                "code": "\n".join([f"- {s}" for s in suggestions])
+            })
+
+        return steps if steps else None
+
+    except Exception:
+        return None

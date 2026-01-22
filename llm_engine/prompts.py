@@ -1,32 +1,19 @@
+# ===============================
+# PROBLEM UNDERSTANDING PROMPT
+# ===============================
 def problem_understanding_prompt(user_goal, dataset_info):
-    """
-    Prompt for understanding ML problem type with low token usage.
-    """
-
     prompt = f"""
 You are a senior machine learning engineer.
-Be concise. Do not add extra text.
 
 User goal:
 {user_goal}
 
-Dataset metadata:
+Dataset:
 - Rows: {dataset_info['rows']}
 - Columns: {dataset_info['columns']}
 - Column names: {dataset_info['column_names']}
 
-Tasks:
-1. Decide ML or DL
-2. Decide task type: classification / regression / time_series / other
-3. Infer target variable type
-4. Brief reasoning (1–2 sentences)
-
-Rules:
-- If data looks tabular → prefer ML
-- If temporal patterns are likely → consider time_series
-- Do NOT assume deep learning unless necessary
-
-Return STRICT JSON only:
+Return STRICT JSON:
 {{
   "ml_type": "",
   "task_type": "",
@@ -37,25 +24,63 @@ Return STRICT JSON only:
     return prompt
 
 
-def cleaning_suggestion_prompt(dataset_profile):
-    """
-    Prompt for LLM-assisted cleaning suggestions.
-    Uses ONLY metadata (cheap, safe).
-    """
+# ===============================
+# CLEANING — NO OUTLIERS
+# ===============================
+CLEANING_GUIDE_PROMPT = """
+You are a senior data scientist mentoring a junior ML engineer.
 
-    prompt = f"""
-You are a senior data scientist.
-Given dataset metadata ONLY (no raw values), suggest high-level data cleaning advice.
+You will receive dataset column metadata.
 
-Dataset profile:
-{dataset_profile}
+Return guidance STRICTLY in this format.
+Do NOT include any Outliers section.
 
-Instructions:
-- Do NOT suggest executing code
-- Focus on reasoning (missing values, outliers, encoding, scaling)
-- Mention risks or assumptions
-- Keep it concise (4–5 bullet points)
+[MISSING]
+Columns:
+- columns with missing values OR None
 
-Return plain text (NOT JSON).
+Method:
+- per-column strategy (median / mode / drop / none)
+
+Why:
+- short explanation
+
+Example:
+- REQUIRED if Columns ≠ None
+- else write: Not required
+
+[ENCODING]
+Columns:
+- categorical columns only
+
+Method:
+- specify per column (one-hot / binary)
+
+Why:
+- short explanation
+
+Example:
+- REQUIRED pandas code
+- must be COMPLETE (no truncation)
+
+[SCALING]
+Columns:
+- numeric columns that benefit from scaling
+- exclude binary / target-like columns
+
+Method:
+- standard / robust / minmax (per column)
+
+Why:
+- short explanation
+
+Example:
+- REQUIRED sklearn code
+- must be COMPLETE
+
+Rules:
+- NEVER invent columns
+- NEVER output partial code
+- Assume dataframe name is df
+- Plain text only
 """
-    return prompt

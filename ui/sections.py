@@ -1,4 +1,5 @@
 import streamlit as st
+from core.visualizer import get_visualization_advice
 
 
 def show_dataset_preview(df):
@@ -19,7 +20,6 @@ def show_problem_understanding(problem_info):
     st.markdown(f"**Task Type:** {problem_info['task_type'].capitalize()}")
     st.markdown(f"**Target Type:** {problem_info['target_type']}")
 
-    # AI visibility (non-intrusive)
     if problem_info.get("source") == "llm":
         st.caption("🤖 AI-assisted reasoning")
 
@@ -33,7 +33,6 @@ def show_cleaning_steps(steps):
     for step in steps:
         st.markdown(f"### {step['title']}")
 
-        # AI visibility
         if step.get("source") == "llm":
             st.caption("🤖 AI-assisted suggestion")
 
@@ -47,9 +46,31 @@ def show_model_plans(plans):
     for plan in plans:
         st.markdown(f"### {plan['title']}")
 
-        # AI visibility
         if plan.get("source") == "llm":
             st.caption("🤖 AI-assisted explanation")
 
         st.markdown(plan["reason"])
-        st.code(plan["model"])
+        st.code(plan["model"], language="python")
+
+
+# ===============================
+# ✅ NEW — Visualization section
+# ===============================
+def show_visualizations(df, target_col=None, session_state=None):
+    st.subheader("Data Visualization")
+
+    advice = get_visualization_advice(
+        df,
+        target_col=target_col,
+        session_state=session_state
+    )
+
+    if advice:
+        st.caption("🤖 AI-assisted visualization guidance")
+        st.markdown(advice)
+    else:
+        st.markdown(
+            "- Distribution plots to understand feature spread\n"
+            "- Correlation plots to identify relationships\n"
+            "- Boxplots to inspect variability"
+        )

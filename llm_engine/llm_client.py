@@ -8,12 +8,13 @@ load_dotenv()
 # LLM SAFETY & COST CONTROLS
 # -------------------------------
 MODEL_NAME = "gpt-3.5-turbo"
-MAX_TOKENS = 300          # hard cap to control cost
+MAX_TOKENS = 1200          # hard cap to control cost
 TEMPERATURE = 0.2
 REQUEST_TIMEOUT = 10     # seconds
 
 
 def call_llm(prompt, fallback_context=None, cache_key=None, session_state=None):
+    
     """
     Tries OpenAI first (if API key exists).
     Enforces token limits & safe defaults.
@@ -30,7 +31,9 @@ def call_llm(prompt, fallback_context=None, cache_key=None, session_state=None):
     api_key = os.getenv("OPENAI_API_KEY")
 
     if api_key:
+        
         try:
+            print("✅ OPENAI API USED")
             openai.api_key = api_key
 
             response = openai.ChatCompletion.create(
@@ -53,6 +56,7 @@ def call_llm(prompt, fallback_context=None, cache_key=None, session_state=None):
             return content
 
         except Exception:
+            print("❌ OPENAI FAILED, FALLING BACK")
             pass  # silently fall back (never crash app)
 
     # ===============================

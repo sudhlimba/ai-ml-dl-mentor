@@ -50,6 +50,28 @@ def render_fullscreen(fig):
         st.session_state.fullscreen_fig = None
         st.experimental_rerun()
 
+
+def llm_plot_explanation(plot_type, features):
+    """
+    LLM explanation for a single plot.
+    Advisory only.
+    """
+    prompt = f"""
+You are a senior data scientist.
+
+Plot type: {plot_type}
+Features involved: {features}
+
+Return EXACTLY two lines:
+Line 1: How to read this plot (1 sentence)
+Line 2: What insight this plot provides (1 sentence)
+
+Rules:
+- No bullets
+- No extra text
+"""
+    return call_llm(prompt=prompt)
+
 # ===============================
 # PAGE CONFIG
 # ===============================
@@ -107,7 +129,7 @@ time_info = (
 )
 
 # ===============================
-# AUTOMATIC VISUALIZATION (CARD OK)
+# AUTOMATIC VISUALIZATION (LLM EXPLANATION, SAME UI)
 # ===============================
 if st.session_state.df is not None:
     st.markdown("## Data Visualization")
@@ -119,8 +141,7 @@ if st.session_state.df is not None:
         visuals.append((
             "Correlation Heatmap",
             "sns.heatmap(df.corr())",
-            "Shows relationships between numeric features.",
-            "Strong correlations suggest important predictors.",
+            "numeric feature correlations",
             heatmap
         ))
 
@@ -128,14 +149,16 @@ if st.session_state.df is not None:
         visuals.append((
             "Boxplot",
             "sns.boxplot(x=df[column])",
-            "Shows distribution and outliers.",
-            "Helps detect invalid or extreme values.",
+            "single numeric feature",
             fig
         ))
 
     if visuals:
         idx = st.slider("Browse visualizations", 0, len(visuals) - 1, 0)
-        title, code, how, learn, fig = visuals[idx]
+        title, code, feature_context, fig = visuals[idx]
+
+        explanation = llm_plot_explanation(title, feature_context)
+        lines = explanation.splitlines() if explanation else ["", ""]
 
         st.markdown("<div class='ml-card'>", unsafe_allow_html=True)
         left, right = st.columns([1, 1])
@@ -143,10 +166,12 @@ if st.session_state.df is not None:
         with left:
             st.markdown(f"### {title}")
             st.code(code)
+
             st.markdown("**How to read**")
-            st.write(how)
+            st.write(lines[0] if len(lines) > 0 else "")
+
             st.markdown("**What we learn**")
-            st.write(learn)
+            st.write(lines[1] if len(lines) > 1 else "")
 
             if st.button("🔍 View Fullscreen", key=f"fs_auto_{idx}"):
                 st.session_state.fullscreen_fig = fig
@@ -160,7 +185,7 @@ if st.session_state.df is not None:
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
 # ===============================
-# CUSTOM GRAPH (CARD OK)
+# CUSTOM GRAPH
 # ===============================
 if st.session_state.df is not None:
     st.markdown("## Build Your Own Graph")
@@ -198,18 +223,17 @@ if st.session_state.df is not None:
 
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
-
 # ===============================
-# DATASET HEALTH REPORT (RESTORED)
+# DATASET HEALTH REPORT
 # ===============================
 if st.session_state.df is not None:
     st.markdown("## Dataset Health Report")
     st.dataframe(profile_dataset(st.session_state.df))
 
-
+st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
 # ===============================
-# DATA CLEANING (NO CARDS)
+# DATA CLEANING
 # ===============================
 if st.session_state.df is not None:
     st.markdown("## Data Cleaning")
@@ -228,17 +252,16 @@ if st.session_state.df is not None:
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
 # ===============================
-# TRAIN–TEST SPLIT (NO CARDS)
+# TRAIN–TEST SPLIT
 # ===============================
 if st.session_state.problem_info is not None:
     st.markdown("## Train-Test Split Strategy")
 
     is_ts = st.session_state.problem_info["task_type"] == "time_series"
 
-
     for s in get_train_test_guidance(
-    st.session_state.problem_info["task_type"],
-    is_ts
+        st.session_state.problem_info["task_type"],
+        is_ts
     ):
         st.markdown(f"### {s['title']}")
         st.write(s["why"])
@@ -247,7 +270,7 @@ if st.session_state.problem_info is not None:
 st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 
 # ===============================
-# MODEL SELECTION (NO CARDS)
+# MODEL SELECTION
 # ===============================
 if st.session_state.problem_info is not None:
     st.markdown("## Model Selection")
