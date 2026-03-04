@@ -123,7 +123,7 @@ st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 # TIME SERIES DETECTION
 # ===============================
 time_info = (
-    detect_time_series(st.session_state.df)
+    detect_time_series(st.session_state.df,st.session_state)
     if st.session_state.df is not None
     else {"is_time_series": False}
 )
@@ -257,7 +257,7 @@ st.markdown("<div class='section-space'></div>", unsafe_allow_html=True)
 if st.session_state.problem_info is not None:
     st.markdown("## Train-Test Split Strategy")
 
-    is_ts = st.session_state.problem_info["task_type"] == "time_series"
+    is_ts = time_info["is_time_series"]
 
     for s in get_train_test_guidance(
         st.session_state.problem_info["task_type"],

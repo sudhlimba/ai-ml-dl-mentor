@@ -50,12 +50,16 @@ def detect_time_series(df, session_state=None):
     # ---------- Rule-based checks ----------
     datetime_cols = []
     for col in df.columns:
-        try:
-            parsed = pd.to_datetime(df[col], errors="coerce")
-            if parsed.notnull().mean() > 0.8:
-                datetime_cols.append(col)
-        except Exception:
-            pass
+        col_lower = col.lower()
+
+        # Only attempt datetime parsing for columns likely to represent time
+        if any(k in col_lower for k in ["date", "time", "timestamp", "year", "month", "day"]):
+            try:
+                parsed = pd.to_datetime(df[col], errors="coerce")
+                if parsed.notnull().mean() > 0.8:
+                    datetime_cols.append(col)
+            except Exception:
+                pass
 
     rule_based = bool(datetime_cols)
 

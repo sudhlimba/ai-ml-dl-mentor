@@ -13,6 +13,17 @@ Dataset:
 - Columns: {dataset_info['columns']}
 - Column names: {dataset_info['column_names']}
 
+Important Definitions:
+
+- ml_type must be one of:
+  ["supervised", "unsupervised"]
+
+- task_type must be one of:
+  ["classification", "regression"]
+
+- target_type must be one of:
+  ["categorical", "numerical", "unknown"]
+
 Return STRICT JSON:
 {{
   "ml_type": "",
