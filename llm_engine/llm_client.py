@@ -33,7 +33,7 @@ def call_llm(prompt, fallback_context=None, cache_key=None, session_state=None):
     if api_key:
         
         try:
-            print("✅ OPENAI API USED")
+            print("[INFO] OPENAI API USED")
             openai.api_key = api_key
 
             response = openai.ChatCompletion.create(
@@ -56,7 +56,7 @@ def call_llm(prompt, fallback_context=None, cache_key=None, session_state=None):
             return content
 
         except Exception:
-            print("❌ OPENAI FAILED, FALLING BACK")
+            print("[INFO] OPENAI FAILED, FALLING BACK")
             pass  # silently fall back (never crash app)
 
     # ===============================

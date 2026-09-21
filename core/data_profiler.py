@@ -29,9 +29,9 @@ def profile_dataset(df):
             upper = q3 + 1.5 * iqr
 
             outliers = col_data[(col_data < lower) | (col_data > upper)]
-            col_info["outlier_count"] = int(outliers.count())
+            col_info["outlier_count"] = str(int(outliers.count()))
         else:
-            col_info["outlier_count"] = "N/A"
+            col_info["outlier_count"] = "-"
 
         report.append(col_info)
 
